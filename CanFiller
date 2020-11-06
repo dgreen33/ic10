@@ -1,0 +1,82 @@
+#= CanFiller = v0.4 ================== by swagman =#
+#   ___              ___  _  _  _                  #
+#  / __| __ _  _ _  | __|(_)| || | ___  _ _   safe #
+# | (__ / _` || ' \ | _| | || || |/ -_)| '_|  fast #
+#  \___|\__,_||_||_||_|  |_||_||_|\___||_|    smrt #
+#==================================================#
+# Safety System idea - credit to DrWathson#4813    #
+# * automatic temperature correction of pressure   #
+# * fill indicator & drain/fill mode switch        #
+# * precise and fast pressure regulator            #
+# * automatic canister type detection              #
+# * automatic drain of other gases                 #
+# * clowns, explosions and helicopters...          #
+#= 2020.09.15 01:32  https://youtu.be/HOq8KUW60ts =#
+
+define smaP 18000 #P for smart canister at 300K
+define defP 8000 #P for common canister at 300K
+define Vout 165 #filler pipes + canister volume
+
+alias GasStr d0
+alias PumpDn d1
+alias PumpUp d2
+alias PipeAn d3
+alias DioSld d4
+alias LedDsp d5 #optional
+alias hash r15
+alias trgP r14
+alias curP r13
+alias oxyP r12
+define smart -668314371
+wait:
+yield
+ls r0 GasStr 0 Occupied
+s DioSld On r0
+s PumpUp On r0
+s PumpDn On r0
+s PipeAn On r0
+bnez r0 work
+j wait
+work:
+ls hash GasStr 0 PrefabHash
+beqz hash wait
+seq r0 hash smart
+select trgP r0 smaP defP
+l curP GasStr Pressure
+breqz curP 4
+l r0 GasStr Temperature
+div r0 r0 300
+mul r1 trgP r0 #fix
+min trgP trgP r1
+div r0 curP trgP
+s DioSld Setting r0
+l r0 DioSld On
+mul trgP trgP r0
+l r0 GasStr RatioOxygen
+seq r0 r0 1
+select r0 curP r0 1
+mul trgP trgP r0
+round r0 curP
+brdns LedDsp 2
+s LedDsp Setting r0
+l oxyP PipeAn Pressure
+sub r0 trgP curP
+sltz r1 r0
+brgtz r1 2
+round r0 r0
+select r2 r1 curP oxyP
+mul r0 r0 Vout
+div r0 r0 r2
+s PumpUp Setting r0
+#s PumpUp On r0 #?
+mul r0 -1 r0
+s PumpDn Setting r0
+#s PumpDn On r0 #?
+yield
+bgt r0 10 work
+blt r0 -200 work
+s PumpUp On 0
+s PumpDn On 0
+yield
+yield
+j work
