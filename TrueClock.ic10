@@ -1,0 +1,29 @@
+#= TrueClock = v0.1 ================== by swagman =#
+#   _____                  ___  _           _      #
+#  |_   _|_ _  _  _  ___  / __|| | ___  __ | |__   #
+#    | | | '_|| || |/ -_)| (__ | |/ _ \/ _|| / /   #
+#    |_| |_|   \_,_|\___| \___||_|\___/\__||_\_\   #
+#==================================================#
+# Precision clock with automatic synchronization   #
+#= 2020.09.16 05:22  https://youtu.be/l1p3qit11XA =#
+alias SolSens d0 #face to east
+alias LedDisp d1
+alias time r15
+alias olda r14
+alias oldd r13
+loop:
+l r0 SolSens SolarAngle
+sub r1 r0 olda
+mul r2 r1 oldd
+brgez r2 2
+move time 0
+move oldd r1
+move olda r0
+trunc r0 time
+s LedDisp Setting r0
+add time time 0.5
+sgtz r1 r1
+select r0 r1 5 0 #5-day, 0-night
+s LedDisp Color r0
+yield
+j loop

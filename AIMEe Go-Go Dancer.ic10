@@ -1,0 +1,59 @@
+#= AIMEe Go-Go Dancer = v0.1 ========= by swagman =#
+#     _____  .___   _____  ___________             #
+#    /  _  \ |   | /     \ \_   _____/ ____        #
+#   /  /_\  \|   |/  \ /  \ |    __)__/ __ \       #
+#  /    |    \   /    Y    \|        \  ___/       #
+#  \____|__  /___\____|__  /_______  /\___  >      #
+#          \/            \/        \/     \/       #
+#    ________                   ________           #
+#   /  _____/  ____            /  _____/  ____     #
+#  /   \  ___ /  _ \   ______ /   \  ___ /  _ \    #
+#  \    \_\  (  <_> ) /_____/ \    \_\  (  <_> )   #
+#   \______  /\____/           \______  /\____/    #
+#          \/                         \/           #
+#  ________                                        #
+#  \______ \ _____    ____   ____  ___________     #
+#   |    |  \\__  \  /    \_/ ___\/ __ \_  __ \    #
+#   |    `   \/ __ \|   |  \  \__\  ___/|  | \/    #
+#  /_______  (____  /___|  /\___  >___  >__|       #
+#          \/     \/     \/     \/    \/           #
+#==================================================#
+#  /-\||\/|[-[-  [,()-[,()  |)/-\|\|([-|2          #
+#= 2019.09.23 16:00  https://youtu.be/-lhvR_eDGEY =#
+alias hx r15
+alias hy r14
+alias hz r13
+j loop
+
+toev: #SUB: round the coord to the frame top center
+floor r0 r0
+mod r1 r0 2
+xor r1 r1 1
+add r0 r0 r1
+j ra
+
+shft: #SUB: random shift to r1
+rand r1
+mul r1 r1 1.2
+sub r1 r1 0.6
+j ra
+
+loop:
+l r0 db PositionX
+jal toev
+jal shft
+add hx r0 r1
+l r0 db PositionZ
+jal toev
+jal shft
+add hz r0 r1
+l r0 db PositionY
+jal toev
+add hy r0 10000 # i believe i can fly
+
+s db TargetX hx
+s db TargetY hy
+s db TargetZ hz
+s db Mode RobotMode.MoveToTarget
+yield
+j loop

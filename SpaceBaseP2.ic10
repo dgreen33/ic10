@@ -1,0 +1,125 @@
+#= Space Base ICS = v0.1 = part 2 ==== by swagman =#
+#  ___                        ___               P2 #
+# / __| _ __  __ _  __  ___  | _ ) __ _  ___ ___   #
+# \__ \| '_ \/ _` |/ _|/ -_) | _ \/ _` |(_-</ -_)  #
+# |___/| .__/\__,_|\__|\___| |___/\__,_|/__/\___|  #
+#======|_|=========================================#
+# + airlock control
+# + room gas drain
+# + baecon pulsator
+#= 2020.00.00 00:00  https://youtu.be/........... =#
+define press0 0 #outer pressure set 0 kPa
+define press1 20 #inner pressure set 20 kPa
+define PrsMax 60 #drain if pressure > 60 kPa
+define period -30 #pulse period 30 ticks (15s) 
+
+alias Door0 d0
+alias Vent0 d1
+alias GSens d2
+alias Door1 d3
+alias Vent1 d4
+alias Pulse d5
+alias state r15
+alias press r14
+alias count r13
+
+#--init
+s Door0 On 1
+s Door1 On 1
+s Door0 Mode 0
+s Door1 Mode 0
+yield
+l r0 Door0 Open
+l r1 Door1 Open
+breq r0 r1 -3
+select state r0 st1 st4
+s Door0 Mode 1
+s Door1 Mode 1
+
+loop:#--main loop
+s db Setting state
+l press GSens Pressure
+j state
+
+st1: #--Door0 opened
+l r0 Door1 Setting
+beqz r0 end
+s Door1 Setting 0
+s Door0 Open 0
+s Door0 On 1
+move state st2
+j end
+
+st2:#--vacuuming 0 start
+sgtz r0 press
+s Vent0 On r0
+s Vent0 Mode 1
+bgtz r0 end
+move state st3
+j end
+
+st3:#--pressurize 1 start
+l r0 Door0 Setting
+select state r0 st5 state
+s Door0 Setting 0
+slt r0 press press1
+l r2 Door1 Setting
+select r0 r2 0 r0
+s Vent1 On r0
+s Vent1 Mode 0
+s Vent1 PressureExternal press1
+bgtz r0 end
+s Door1 Open 1
+s Door1 On 0
+move state st4
+j end
+
+st4:#--Door1 opened
+#--drain if pressure to high
+sgt r0 press PrsMax
+s Vent0 On r0
+breqz r0 3
+s Vent0 Mode 1
+s Vent0 PressureExternal press1
+#--
+l r0 Door0 Setting
+beqz r0 end
+s Door0 Setting 0
+s Door1 Open 0
+s Door1 On 1
+move state st5
+j end
+
+st5:#--vacuuming 1 start
+sgtz r0 press
+s Vent1 On r0
+s Vent1 Mode 1
+bgtz r0 end
+move state st6
+j end
+
+st6:#--pressurize 0 start
+l r0 Door1 Setting
+select state r0 st2 state
+s Door1 Setting 0
+slt r0 press press0
+l r2 Door0 Setting
+select r0 r2 0 r0
+s Vent0 On r0
+s Vent0 Mode 0
+s Vent0 PressureExternal press0
+bgtz r0 end
+s Door0 Open 1
+s Door0 On 0
+move state st1
+end:#--mod--automatic airlock
+yield
+
+#--Beacon pulsator
+brdns Pulse 5
+l r0 Pulse On
+select count r0 period count
+add count count 1
+s Pulse On count
+
+j loop

@@ -1,0 +1,113 @@
+#= Solar Power Station ICS = v0.1 ==== by swagman =#
+#    ___      _          ___  ☺  ___ _             #
+#   / __| ___| |__ _ _ _| _ \___/ __| |_ automated #
+#   \__ \/ _ \ / _` | '_|  _/ _ \__ \  _| control  #
+#   |___/\___/_\__,_|_| |_| \___/___/\__|  system  #
+#==================================================#
+# SolarSensor, on floor, connector to the North    #
+# SolarPanels, power connector to the West         #
+#                                                  #
+# Minimal configuration:                           #
+#  SLP -solar panel  STBA -stat. battery or APC    #
+#    W -batch writer    M -memory                  #
+#    H -ic housing      S -solar sensor            #
+# Additional:                                      #
+#   LD -lcd display, show instant delta power and  #
+#       charge ratio of battery array if R present #
+#    R -batch reader, get charge ratio of batterys #
+# SFGE -solid fuel generator, for backup power     #
+#   TT -transformer, it's not a transformer, lol,  #
+#       it's a power limiter                       #
+#                                                  #
+#     SLP SLP SLP SLP                      E       #      
+#    ~═╧═══╪═══╧═══╪═╕----              N<═╬═>S    #
+#          │    LD┌W┌W                     W       #
+#          │     └┼┼┼┤                             #
+#          │      ├RHM                             #
+#    ~══╤══╪═══╗  ├┴┘-----                         #
+#      ST ST  SF  ├S                               #
+#      BA BA  GE  │                                #
+#    ~══╧══╧═══╧══╧═══TT═>                         #
+#                                                  #
+# logic setup:  H > W > SLP Horizontal             #
+#               M > W > SLP Vertical               #
+#               STBA > R > Ratio Avg               #
+#               S, M, STBA, (LD, R, SFGE) > H      #
+#==================================================#
+# _\"()|_/-\|2   |'()\/\/[-|2   _\""|"/-\"|"|()|\| #
+#= 2019.09.17 17:21  https://youtu.be/5Kv7aRK98HE =#
+alias MemoryH db
+alias DaySens d0
+alias MemoryV d1
+alias Battery d2
+
+alias LedDisp d3
+alias BatRead d4
+alias ResPowr d5
+
+alias sMod r15
+alias sAng r14
+alias pPot r13
+alias pAct r12
+
+alias AngleH r11
+alias AngleV r10
+alias LedMode r9
+alias LedColor r8
+alias PowDelta r7
+alias BatRatio r6
+
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~
+loop:
+yield
+l sAng DaySens SolarAngle
+l pAct Battery PowerActual
+l pPot Battery PowerPotential
+
+move BatRatio 0
+brdns BatRead 2 # BatRead device not set - skip loal
+l BatRatio BatRead Setting
+
+#--AngleV calc
+sub r0 75 sAng
+div r0 r0 1.5
+select AngleV sMod AngleV r0 # if sMod = 0 use r0
+
+#--AngleH calc
+sgez r0 AngleV # if day
+or r0 r0 pPot # or power
+select sAng r0 sAng 90 #use sAng, else park override
+sub r0 0 sAng # add solar panel orientation offset
+select AngleH sMod r0 AngleH # if sMod = 1 use r0
+
+#--PowDelta prepare for show
+sub PowDelta pPot pAct
+sgez r0 PowDelta # if PowDelta >= 0
+select LedColor r0 2 4 # color green, else red
+move LedMode 2 #0-normal 1-percent 2-watt
+
+#--BatRatio prepare for override 
+and r0 sMod BatRatio # if sMod and BatRatio
+breqz r0 4 # =0 - skip override
+move PowDelta BatRatio
+move LedColor 3
+move LedMode 1
+
+#--ResPowr On if need and set
+slt r0 BatRatio 0.01 
+brdns ResPowr 2 #if not set - skip save
+s ResPowr On r0 #oh, it`s very very symple and bad
+# hysteresis needed here
+
+#--switch sensor mode and save
+xor sMod sMod 1
+s DaySens Mode sMod
+s MemoryH Setting AngleH
+s MemoryV Setting AngleV
+
+bdns LedDisp loop #if LedDisp not set, jump to loop
+s LedDisp Setting PowDelta
+s LedDisp Color LedColor
+s LedDisp Mode LedMode
+j loop
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.   \-(o)-(o)-/

@@ -1,0 +1,64 @@
+#= Hard Suit Automaton = v 0.8s ====== by swagman =#
+#  _  _ .simplified._   ___      _ _     li je **  #
+# | || |__ _ _ _ __| | / __|_  _(_) |_   te fi ba  #
+# | __ / _` | '_/ _` | \__ \ || | |  _|  ** re se  #
+# |_||_\__,_|_| \__,_| |___/\_,_|_|\__|  Automaton #
+#==================================================#
+# NormalMode:                                      #
+# + auto light off timer                           #
+# + jetpack "silent mode"                          #
+# Free first filter slot to enable AdvancedMode:   #
+# + auto correct A/C settings by external temp     #
+# + auto activation A/C at critical temperatures   #
+# + filter system control for filters longer life  #
+# Place filter in first slot for safe chip removal #
+#==================================================#
+# |-| _\"  /-\ |_| "|" () |\/| /-\ "|" () |\| - |_ #
+#= 2019.09.13 02:43  https://youtu.be/Nh8U1YmfuXE =#
+
+define cZer 273.15 # 0C
+define cMid 298.15 # 25C
+define cMax 323.15 # 50C
+alias Suit db
+alias Helm d0
+alias Back d1
+alias debug r13
+alias count r12
+alias lTime r11
+alias s4o r10
+alias LiEn r9
+alias TeEn r8
+alias FiEn r7
+alias TeSe r6
+alias TeEx r5
+alias TeIn r4
+alias RaOx r3
+move lTime 200
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~
+loop:
+yield
+ls s4o Suit 4 Occupied
+l LiEn Helm On
+l TeEx Suit TemperatureExternal
+l TeIn Suit Temperature
+l RaOx Suit RatioOxygen
+mul count count LiEn
+add count count LiEn
+sub r0 lTime count
+brgt r0 4 2
+s Helm On r0
+s Back On 1
+s Back Activate 0
+min TeSe TeEx cMax
+max TeSe TeSe cZer # 0C
+sna TeEn TeIn cMid 0.1 # 25C 30C
+slt FiEn RaOx 0.40
+select TeEn s4o 1 TeEn
+select FiEn s4o 1 FiEn
+select TeSe s4o cMid TeSe
+s Suit On TeEn
+s Suit Filtration FiEn
+s Suit TemperatureSetting TeSe
+s Suit PressureSetting 50
+j loop
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.   \-(o)-(o)-/

@@ -1,0 +1,88 @@
+#= Space Base ICS = v0.1 = part 1 ==== by swagman =#
+#  ___                        ___               P1 #
+# / __| _ __  __ _  __  ___  | _ ) __ _  ___ ___   #
+# \__ \| '_ \/ _` |/ _|/ -_) | _ \/ _` |(_-</ -_)  #
+# |___/| .__/\__,_|\__|\___| |___/\__,_|/__/\___|  #
+#======|_|=========================================#
+# + solar track + night park
+# + temparature control (vacuum cooler)
+# + CO2 ratio & pressure control
+# + H2 & X filtration control
+#= 2020.00.00 00:00  https://youtu.be/........... =#
+define SPanOri 90 #solar port to 0-West, 180-East
+define SetTemp 300 #set temperature 300K
+define TmpPrec 0.01 #temperature precision 1%
+define CO2Ratio 0.1 #minimal CO2 ratio 10%
+define RoomPres 20 #minimal room pressure 50 kPa
+
+alias MemoryH db
+alias DaySens d0
+alias MemoryV d1
+
+alias GasSens d2
+alias ActVenT d3
+alias FiltCO2 d4
+alias FiltPol d5 #4 light off control see below
+
+alias sMod r15
+alias sAng r14
+
+alias AngleH r13
+alias AngleV r12
+
+alias oldn r11
+
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~
+loop:
+yield
+l sAng DaySens SolarAngle
+
+#--AngleV calc
+sub r0 75 sAng
+div r0 r0 1.5
+select AngleV sMod AngleV r0
+
+#--AngleH calc
+sgt r0 AngleV -30
+select sAng r0 sAng 0 #park if night
+sub r0 SPanOri sAng
+select AngleH sMod r0 AngleH
+
+#--switch sensor mode and write angles
+xor sMod sMod 1
+s DaySens Mode sMod
+s MemoryH Setting AngleH
+s MemoryV Setting AngleV
+
+bdns GasSens loop
+#--temparature control (vacuum cooler)
+l r0 GasSens Temperature
+sna r1 r0 SetTemp TmpPrec
+s ActVenT On r1
+sgt r0 r0 SetTemp
+s ActVenT Mode r0
+select r0 r0 0 7
+s ActVenT PressureExternal r0
+
+#--CO2 ratio & pressure control
+l r0 GasSens RatioCarbonDioxide
+l r1 GasSens Pressure
+slt r0 r0 CO2Ratio
+slt r1 r1 RoomPres
+or r0 r0 r1
+s FiltCO2 On r0
+
+#--light off control
+slt r0 AngleV 0
+brge r0 oldn 2
+s FiltPol On r0
+move oldn r0
+
+#--H2 & X filtration control
+#l r0 GasSens RatioPollutant
+#l r1 GasSens RatioVolatiles
+#or r0 r0 r1
+#s FiltPol On r0
+
+j loop
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.   \-(o)-(o)-/

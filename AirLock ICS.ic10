@@ -1,0 +1,98 @@
+#= AirLock ICS = v0.3 ================ by swagman =#
+#    __    _   ___   _     ___   __    _      1-2  #
+#   / /\  | | | |_) | |   / / \ / /`  | |_/   rev  #
+#  /_/--\ |_| |_| \ |_|__ \_\_/ \_\_, |_| \   pas  #
+#==================================================#
+# Vent0, Vent1, Pulse - optional devices           #
+# + airlock control (1-2 mode, revers, quick pass) #
+# + beacon pulsator (turn on by 1 tick per period) #
+#= 2020.10.05 04:36  https://youtu.be/ekjreSjr49c =#
+
+define press0 0  #outer (Vent0) pressure set 0 kPa
+define press1 50 #inner (Vent1) pressure set 50 kPa
+define period 20 #beacon pulse period 20 ticks
+
+alias Door0 d0
+alias Vent0 d1
+alias GSens d2
+alias Door1 d3
+alias Vent1 d4
+alias Pulse d5
+
+alias state r15
+alias route r14
+alias press r13
+alias targp r12
+alias btrev r11
+alias btpas r10
+#r9 - r6 used for index
+alias count r5
+
+move state st1
+loop:#--main loop
+yield
+select targp route press0 press1
+select r9 route 0 3 #Door0 Door1
+select r8 route 3 0 #Door1 Door0
+select r6 route 4 1 #Vent1 Vent0
+select r7 route 1 4 #Vent0 Vent1
+l press GSens Pressure
+l btpas dr9 Setting
+l btrev dr8 Setting
+s dr9 Setting 0
+s dr8 Setting 0
+s db Setting state #debug
+j state
+
+st1: #--door opened
+l r0 Door0 Open #--init\
+l route Door1 Open
+xor r0 route r0
+s Door0 Mode r0
+s Door1 Mode r0
+brdns Vent0 2
+s Vent0 Lock r0
+brdns Vent1 2
+s Vent1 Lock r0
+s dr8 On 1
+beqz r0 end #--init/
+s dr9 On 1
+s dr8 On btpas
+beqz btpas end
+s dr8 Open 0
+move state st2
+j end
+
+st2: #--vacuuming
+xor route route btrev
+select state btrev st3 st2
+sgtz r0 press
+bdns dr6 st3
+s dr6 On r0
+s dr6 Mode 1
+select state r0 state st3
+j end
+
+st3: #--pressurize
+xor route route btrev
+select state btrev st2 st3
+slt r0 press targp
+select r0 btpas 0 r0
+brdns dr7 5
+s dr7 On r0
+s dr7 Mode 0
+s dr7 PressureExternal targp
+bgtz r0 end
+s dr9 Open 1
+s dr9 On 0
+xor route route 1
+move state st1
+end:#--airlock
+
+brdns Pulse 5 #--beacon pulsator
+slez r0 count
+s Pulse On r0
+select count r0 period count
+sub count count 1
+
+j loop

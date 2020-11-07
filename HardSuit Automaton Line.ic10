@@ -1,0 +1,104 @@
+#= Hard Suit Automaton = v 0.8 ======= by swagman =#
+#  _  _             _   ___      _ _     li je **  #
+# | || |__ _ _ _ __| | / __|_  _(_) |_   te fi ba  #
+# | __ / _` | '_/ _` | \__ \ || | |  _|  ** re se  #
+# |_||_\__,_|_| \__,_| |___/\_,_|_|\__|  Automaton #
+#==================================================#
+# Use "Pressure Up/Down" button to set light timer #
+# Look at "Temperature Setting" on hud when setup  #
+# NormalMode:                                      #
+# + auto light off timer                           #
+# + jetpack "silent mode"                          #
+# Free first filter slot to enable AdvancedMode:   #
+# + auto correct A/C settings by external temp     #
+# + auto activation A/C at critical temperatures   #
+# + filter system control for filters longer life  #
+# + display of remaining battery life in seconds   #
+# Place filter in first slot for safe chip removal #
+#==================================================#
+# |-| _\"  /-\ |_| "|" () |\/| /-\ "|" () |\| - |_ #
+#= 2019.09.13 02:43  https://youtu.be/Nh8U1YmfuXE =#
+
+define cZer 273.15 # 0°C
+define cMid 298.15 # 25°C
+define cMax 323.15 # 50°C
+alias Suit db
+alias Helm d0
+alias Back d1
+alias debug r15
+alias count r14
+alias bPrCh r13
+alias lTime r12
+alias s4o r10
+alias LiEn r9
+alias TeEn r7
+alias FiEn r8
+alias TeSe r6
+alias TeEx r5
+alias TeIn r4
+alias BaCh r3
+alias RaOx r2
+
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~
+loop:
+yield
+ls s4o Suit 4 Occupied
+l LiEn Helm On
+ls BaCh Suit 2 Charge
+l TeEx Suit TemperatureExternal
+l TeIn Suit Temperature
+l RaOx Suit RatioOxygen
+
+#--light control module
+mul count count LiEn
+add count count LiEn
+sub r0 lTime count
+brgt r0 4 2
+s Helm On r0
+
+#--jetpack control module
+s Back On 1
+s Back Activate 0 # bug "silent mode"
+
+#--temp control module
+min TeSe TeEx cMax # 50°C
+max TeSe TeSe cZer # 0°C
+sna TeEn TeIn cMid 0.1 # 25°C ±30°C
+
+#--filter control module
+slt FiEn RaOx 0.40
+
+#--battery control module
+sub r0 bPrCh BaCh
+move bPrCh BaCh
+div BaCh BaCh r0
+div BaCh BaCh 2
+sub r0 cZer BaCh
+xor debug debug 1
+brgtz debug 2
+select TeSe TeEn TeSe r0
+
+#--restore safe setting
+select TeEn s4o 1 TeEn
+select FiEn s4o 1 FiEn
+select TeSe s4o cMid TeSe
+
+#--setup module
+l r0 Suit PressureSetting
+sub r0 r0 50
+mul r0 r0 100 #step
+add lTime lTime r0
+max lTime lTime 100 #init
+breqz r0 5
+move TeEn 0
+div TeSe lTime 2
+add TeSe cZer TeSe
+
+#--apply automaton
+s Suit On TeEn
+s Suit Filtration FiEn
+s Suit TemperatureSetting TeSe
+s Suit PressureSetting 50
+j loop
+
+#.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.-~-.   \-(o)-(o)-/

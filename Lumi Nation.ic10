@@ -1,0 +1,39 @@
+#= LumiNation = v0.1 ================= by swagman =#
+#    .---.       ___    _  ,---.    ,---. .-./`)   #
+#    | ,_|     .'   |  | | |    \  /    | \ .-.')  #
+#  ,-./  )     |   .'  | | |  ,  \/  ,  | / `-' \  #
+#  \  '_ '`)   .'  '_  | | |  |\_   /|  |  `-'`"`  #
+#   > (_)  )   '   ( \.-.| |  _( )_/ |  |  .---.   #
+#  (  .  .-'   ' (`. _` /| | (_ o _) |  |  |   |   #
+#   `-'`-'|__  | (_ (_) _) |  (_,_)  |  |  |   |   #
+#    |        \ \ /  . \ / |  |      |  |  |   |   #
+#    `--------`  ``-'`-''  '--'      '--'  '---'   #
+#          __  _  ____ _____ _ ____ __  _          #
+#         |  \| |/ () \_   _| / () \  \| |         #
+#         |_|\__/__/\__\|_| |_\____/_|\__|         #
+#==================================================#
+# Write this code into ic10 chip and connect any   #
+# number of LEDs to the ports. LEDs only, Ok?      #
+#==================================================#
+#  |_|_||\/|| |\|/-\"|"|()|\|                      #
+#= 2019.09.23 16:00  https://youtu.be/-lhvR_eDGEY =#
+
+alias color r15
+alias power r14
+
+loop:
+rand color
+mul color color 12 #random color
+rand power
+slt power power 0.85 #85% chance of glow
+
+brdns dr0 3 #if device (r0) not set - skip
+s dr0 Color color
+s dr0 On power
+
+sub r0 r0 1 #next port
+bgez r0 loop #end port?
+
+move r0 5 #start a new cycle
+yield
+j loop

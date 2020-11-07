@@ -1,0 +1,32 @@
+#Simple solar tracking
+alias DaySens d0 # fase up, port to North
+alias MemoryV d1
+alias MemoryH db
+alias sMod r15
+alias sAng r14
+alias AngH r13
+alias AngV r12
+
+loop:
+yield
+l sAng DaySens SolarAngle
+
+#--AngV calc
+sub r0 75 sAng
+div r0 r0 1.5
+select AngV sMod AngV r0
+
+#--AngH calc & park check
+sgt r0 AngV -30 # if less -30 go park
+select sAng r0 sAng 90 # 90 -park angle
+sub r0 0 sAng #0 -panel port to West (-90,0,90,180)
+select AngH sMod r0 AngH
+
+#--switch sensor mode and write angles
+xor sMod sMod 1
+s DaySens Mode sMod
+s MemoryH Setting AngH
+s MemoryV Setting AngV
+
+# additional code write here
+j loop

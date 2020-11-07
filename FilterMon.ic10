@@ -1,0 +1,115 @@
+#= Filter Monitor = v 0.1 ============ by swagman =#
+#  ___ _ _ _             __  __       four-channel #
+# | __(_) | |_ ___ _ _  |  \/  |___ _ _  simple    #
+# | _|| | |  _/ -_) '_| | |\/| / _ \ ' \   safety  #
+# |_| |_|_|\__\___|_|   |_|  |_\___/_||_|    smart #
+#==================================================#
+# Automatically detects filter type on first start #
+# + shows filter resource on DiodeSlider           #
+# + shows type of filter if need of replacement    #
+# + validates filter type                          #
+# + turns off machine if wrong filter installed    #
+# Additional you can:                              #
+# + temp. disable type checking for any channel    #
+# + special channel programming mode on the fly    #
+#==================================================#
+#   |= | |_ "|" [- |2    |\/| () |\| | "|" () |2   #
+#= 2019.12.30 02:37  https://youtu.be/*********** =#
+
+define low 5 #- set minimum filter state in percent
+
+alias Filter_1 d0
+alias DioSli_1R d1
+alias DioSli_1L d2
+alias Filter_2 d3
+alias DioSli_2R d4
+alias DioSli_2L d5
+
+alias port r15
+alias slot r14
+alias hash r13
+alias can r12
+alias top r11
+
+#---init
+move sp 0
+push 1635000764 #CO2
+push 1876847024
+push 416897318
+push 632853248 #N
+push -1387439451
+push -632657357
+push -1247674305 #N2O
+push 465267979
+push 1824284061
+push -721824748 #O 
+push -1217998945 
+push -1067319543
+push 1915566057 #X 
+push 1959564765 
+push 63677771
+push 15011598 #H 
+push 1255156286 
+push 1037507240
+push -1993197973 #H2O 
+push 2004969680 
+push 8804422
+move top sp
+move r1 0
+move r2 0
+move r3 0
+move r4 0
+
+#---main loop
+loop:
+xor slot slot 1
+add can port 1 #-canal 1,2,4,5
+add can can slot
+bdns dr15 next #-skip if machine not set
+
+#--check filter state
+ls r0 dr15 slot Quantity
+ls hash dr15 slot PrefabHash
+brgt r0 low 2 
+s db Setting hash
+div r0 r0 100
+s dr12 Setting r0
+
+#--check filer type
+l r0 dr12 On
+bgtz r0 next #-skip if slider on (simple mode!)
+xor r0 r0 1 
+mul rr12 rr12 r0 #-reset if slider on
+beqz hash next #-skip if no filter
+bnez rr12 test #-go test if type set
+
+#-find hash
+move sp top
+beqz sp error
+pop r0
+brne r0 hash -2
+add r0 sp 1
+div r0 r0 3
+ceil r0 r0
+mul rr12 r0 3
+j next
+
+test: #-test hash
+move sp rr12
+sub r3 sp 3
+pop r0
+beq r0 hash next
+brgt sp r3 -2
+s dr15 On 0
+
+next:
+bgtz slot loop
+select port port 0 3
+bne slot port loop
+yield
+s db Setting 0
+j loop
+
+error: #---unknown hash
+s db Setting 1005843700
+j next

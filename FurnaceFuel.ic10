@@ -1,0 +1,49 @@
+lr r0 d0 0 Iron
+lr r1 d0 0 Nickel
+lr r2 d0 0 Cobalt
+lr r3 d0 0 Lead
+lr r4 d0 0 Gold
+lr r5 d0 0 Copper
+lr r6 d0 0 Silver
+lr r7 d0 0 Silicon
+move r8 0 #--get base
+move r10 1e100
+breqz rr8 2
+min r10 r10 rr8
+add r8 r8 1
+brlt r8 8 -3
+move r11 0 #--bits pack
+sub r8 r8 1
+mul r11 r11 2
+brgt r8 2 2
+mul r11 r11 2
+div r9 rr8 r10
+add r11 r11 r9
+brgtz r8 -6
+move sp 0 #--push data
+push    1.0900010 #3FeC -Steel group (default mode)
+push    5.1200600 #FeNi -Invar
+push   65.0300030 #FePb -Solder
+push  137.1150425 #2NiAuFe -Inconel
+push  274.1200500 #2FeCuCo -Astroloy
+push  260.1000010 #CuNi -Constantan
+push  536.0950250 #2NiAgCo -Hastelloy
+push  584.0875125 #2NiAgPb -Waspaloy
+push  640.0700080 #AuAg -Electrum
+push 1568.1700400 #2CoAgSi -Stellite
+pop r0 #--find alloy
+trunc r1 r0
+breq r11 r1 2
+brgtz sp -3
+sub r0 r0 r1
+mul r0 r0 10000
+trunc r1 r0 #r1 - temperature
+sub r0 r0 r1
+mul r0 r0 10000 #r0 - pressure
+
+Some notes on the code:
+- The code checks the reagents loaded in the furnace and gives the lower limits temperature and pressure for the alloys.
+- "steel group" is the default mode. This includes: unknown alloys, single reagents and incorrect reagent combinations.
+- Constantan can also be included here, it has lower gas density requirements than steel. (-1 line)
+- I draw your attention to the fact that the lower limits of temperature and pressure for alloys are included in the database only as an example. For real work, it is better to store the density of the gas there. (-3 lines)
+- If necessary, you can easily split the "steel group", add carbon (to check the correct composition of the steel), add separate modes for single reagents, and zero mode for erroneous combinations. It's just a few more lines.

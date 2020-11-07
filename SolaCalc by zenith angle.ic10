@@ -1,0 +1,36 @@
+#= Solar Calc by zenith angle = v0.1 = by swagman =#
+#  ___      _           ___      _                 #
+# / __| ___| |__ _ _ _ / __|__ _| |__              #
+# \__ \/ _ \ / _` | '_| (__/ _` | / _| azimuth by  #
+# |___/\___/_\__,_|_|  \___\__,_|_\__| zenith ang  #
+#==================================================#
+# calculation sun angles by spherical trigonometry #
+# azimuth by zenith angle, if sensor is face up    #
+#= 2020.09.22 06:29  https://youtu.be/Az5Ct-t_X2g =#
+define DegInRad 57.2957795131
+alias SolSens d0 #face to up
+alias SolPanl d1 #power to south
+alias tana r15
+alias oldz r14
+div r0 8 DegInRad #8 - Mars ecliptic in radians
+tan tana r0
+
+loop:
+l r0 SolSens SolarAngle #read zenith angle (z)
+div r1 r0 DegInRad  #convert to radians
+
+tan r1 r1 #azimuth = asin(tan 8 / tan z)
+div r1 tana r1
+asin r1 r1
+mul r1 r1 DegInRad #convert to degrees
+
+brlt r0 oldz 2
+sub r1 180 r1 #second half day correction
+move oldz r0
+
+sub r0 75 r0 #convert zenith angle to panel
+div r0 r0 1.5
+s SolPanl Vertical r0
+s SolPanl Horizontal r1
+yield
+j loop

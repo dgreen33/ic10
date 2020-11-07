@@ -1,0 +1,32 @@
+# k - Gas Mixer setting Calculation
+# n - Gas Mixer target
+# t1, t2 - mixed gas temperatures
+#
+#           n*t1
+#        ---------- * 100
+#        (100-n)*t2
+# k = --------------------
+#           n*t1
+#        ---------- + 1
+#        (100-n)*t2
+# # https://youtu.be/9oQBcfK4OiY
+
+alias mem d0
+alias an1 d1
+alias an2 d2
+alias mix d3
+loop:
+l r0 mem Setting
+l r1 an1 Temperature
+l r2 an2 Temperature
+mul r1 r0 r1
+sub r0 100 r0
+mul r2 r0 r2
+div r0 r1 r2
+mul r1 r0 100
+add r2 r0 1
+div r0 r1 r2
+s db Setting r0
+s mix Setting r0
+yield
+j loop
