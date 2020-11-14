@@ -1,0 +1,86 @@
+#= AIMEe Simple Digger = v0.1 ======== by swagman =#
+#     _     ___   __  __   ___          teach      #
+#    /_\   |_ _| |  \/  | | __|  ___     dig       #
+#   / _ \   | |  | |\/| | | _|  / -_)     dig      #
+#  /_/ \_\ |___| |_|  |_| |___| \___|      dug     #
+#==================================================#
+# slots: 0 Battery; 1 IC10; 2-9 Ore storage
+# ls r0 db 0 OccupantHash # check battery type 
+# ls r0 db 0 Charge # check charge in joules
+# ls r0 db 0 ChargeRatio # check charge ratio
+# ls r0 db 9 Occupied # check of ores unloading
+# 
+# vars RW: On; Mode; TargetX-Z
+# vars RO: PositionX-Z; VelocityMagnitude  
+# s db On 0 - turn off AIMEe
+# l r0 db VelocityMagnitude # check velocity
+# 
+# modes:
+# 0idle 1Follow 2MoveTo 3Dig 4Unload 5PathTo 6Full
+# 2,5 - try to go to coords set in TargetX-Z
+# -stuck - VelocityMagnitude less then .001
+# -got to target coords (1 m) -  set Mode to 0
+# 1 - try to get close to the nearest player
+# 3 - find random ore spot, within 15 m, move to
+#     and get ore into the storage slots
+# -can't find ore - stand still
+# -storage full -  set Mode to 6
+# -success dug - program restart! surprise, huh?
+# 4 - try to unload ore to chute inlet within 3 m
+# -can't find inlet - set Mode to 0
+# -all ore unloaded - set Mode to 0
+#= 2020.11.14 20:27  https://youtu.be/wGHsl6ds2kU =#
+
+define smallBattery 700133157
+alias baseX r15
+alias baseY r14
+alias baseZ r13
+alias workX r12
+alias workY r11
+alias workZ r10
+
+ls r0 db 0 OccupantHash
+bne r0 smallBattery loop
+
+#teach
+l baseX db PositionX
+l baseY db PositionY
+l baseZ db PositionZ
+s db Mode 1
+ls r0 db 0 OccupantHash
+breq r0 smallBattery -1
+l workX db PositionX
+l workY db PositionY
+l workZ db PositionZ
+
+loop:
+s db TargetX workX
+s db TargetY workY
+s db TargetZ workZ
+s db Mode 5 # go to work
+l r0 db Mode
+brnez r0 -1
+
+s db Mode 3 # dig
+l r0 db Mode
+brne r0 6 -1
+
+s db TargetX baseX
+s db TargetY baseY
+s db TargetZ baseZ
+s db Mode 5 # go to base
+l r0 db Mode
+brnez r0 -1
+
+s db Mode 4 # try unload
+l r0 db Mode
+brnez r0 -1
+
+ls r0 db 9 Occupied # unloading success?
+beqz r0 loop # go to work
+
+s db On 0 # else power off
+
+
+
+
